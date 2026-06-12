@@ -57,6 +57,22 @@ export interface SnapshotSetters {
   setLoading: (v: boolean) => void;
 }
 
+// ── Admin session (single active device) ─────────────────────────────────────
+
+const sessionRef = () => doc(db, 'adminSession', 'active');
+
+export async function writeAdminSession(token: string): Promise<void> {
+  await setDoc(sessionRef(), { token });
+}
+
+export function listenAdminSession(cb: (token: string | null) => void): () => void {
+  return onSnapshot(sessionRef(), (snap) => {
+    cb(snap.exists() ? ((snap.data().token as string | null) ?? null) : null);
+  });
+}
+
+// ── App data listeners ────────────────────────────────────────────────────────
+
 export function setupFirestoreListeners(setters: SnapshotSetters): () => void {
   const resolved = new Set<string>();
   const markResolved = (key: string) => {

@@ -1,23 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { writeAdminSession, listenAdminSession } from '../lib/firestoreService';
 
-const AUTH_KEY = 'pp_admin_auth';
+const SESSION_KEY = 'pp_admin_token';
+
+function generateToken(): string {
+  return `${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 export function useAdminAuth() {
-  const [authed, setAuthed] = useState(() => sessionStorage.getItem(AUTH_KEY) === '1');
+  const [authed, setAuthed] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
-  function login(username: string, password: string): boolean {
+  useEffect(() => {
+    const unsub = listenAdminSession((remoteToken) => {
+      const local = sessionStorage.getItem(SESSION_KEY);
+      const valid = !!local && local === remoteToken;
+      if (!valid && local) {
+        // Another device logged in — invalidate this session
+        sessionStorage.removeItem(SESSION_KEY);
+      }
+      setAuthed(valid);
+      setIsChecking(false);
+    });
+    return unsub;
+  }, []);
+
+  async function login(username: string, password: string): Promise<boolean> {
     if (username === 'ABC' && password === '123') {
-      sessionStorage.setItem(AUTH_KEY, '1');
-      setAuthed(true);
+      const token = generateToken();
+      sessionStorage.setItem(SESSION_KEY, token);
+      await writeAdminSession(token);
+      // onSnapshot fires immediately after write and sets authed = true
       return true;
     }
     return false;
   }
 
   function logout() {
-    sessionStorage.removeItem(AUTH_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
     setAuthed(false);
   }
 
-  return { authed, login, logout };
+  return { authed, isChecking, login, logout };
 }

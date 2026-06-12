@@ -8,14 +8,17 @@ import { useAdminAuth } from '../hooks/useAdminAuth';
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 
-function AdminLogin({ onLogin }: { onLogin: (u: string, p: string) => boolean }) {
+function AdminLogin({ onLogin }: { onLogin: (u: string, p: string) => Promise<boolean> }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const ok = onLogin(username, password);
+    setSubmitting(true);
+    const ok = await onLogin(username, password);
+    setSubmitting(false);
     if (!ok) {
       setError(true);
       setTimeout(() => setError(false), 2500);
@@ -71,10 +74,11 @@ function AdminLogin({ onLogin }: { onLogin: (u: string, p: string) => boolean })
 
           <button
             type="submit"
-            className="mt-5 w-full rounded-full bg-accent py-3 text-sm font-700 text-white shadow-glow-accent transition-all hover:bg-accent-light active:scale-[0.98]"
+            disabled={submitting}
+            className="mt-5 w-full rounded-full bg-accent py-3 text-sm font-700 text-white shadow-glow-accent transition-all hover:bg-accent-light active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
             style={{ fontWeight: 700 }}
           >
-            Ingresar
+            {submitting ? 'Ingresando…' : 'Ingresar'}
           </button>
         </form>
 
@@ -100,7 +104,17 @@ interface ItemFormState {
 const emptyItemForm: ItemFormState = { name: '', description: '', price: '', image: '' };
 
 export default function AdminPanel() {
-  const { authed, login, logout } = useAdminAuth();
+  const { authed, isChecking, login, logout } = useAdminAuth();
+
+  if (isChecking) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-bg-base">
+        <span className="text-5xl">🍝</span>
+        <p className="animate-pulse text-sm text-text-muted">Verificando sesión…</p>
+      </div>
+    );
+  }
+
   if (!authed) return <AdminLogin onLogin={login} />;
   return <AdminPanelInner onLogout={logout} />;
 }
