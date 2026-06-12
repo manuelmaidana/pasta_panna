@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd app-menu && npm install && npm run build",
+  "outputDirectory": "app-menu/dist",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Trash2, MessageCircle, ChevronDown } from 'lucide-react';
+import { X, Trash2, MessageCircle, ChevronDown, MapPin } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppStore } from '../store/appStore';
 import type { CustomerData } from '../utils/whatsapp';
@@ -8,8 +8,10 @@ import { buildWhatsAppUrl } from '../utils/whatsapp';
 const initialCustomer: CustomerData = {
   name: '',
   address: '',
-  phone: '',
+
+  piso: '',
   payment: 'efectivo',
+  deliveryZoneId: '',
   notes: '',
 };
 
@@ -17,27 +19,33 @@ export default function CheckoutModal() {
   const isOpen = useAppStore((s) => s.isCheckoutOpen);
   const closeCheckout = useAppStore((s) => s.closeCheckout);
   const cart = useAppStore((s) => s.cart);
+  const deliveryZones = useAppStore((s) => s.deliveryZones);
   const cartTotal = cart.reduce((sum, c) => sum + c.menuItem.price * c.quantity, 0);
   const updateQuantity = useAppStore((s) => s.updateQuantity);
   const removeFromCart = useAppStore((s) => s.removeFromCart);
   const clearCart = useAppStore((s) => s.clearCart);
 
   const [customer, setCustomer] = useState<CustomerData>(initialCustomer);
-  const [errors, setErrors] = useState<Partial<CustomerData>>({});
+  const [errors, setErrors] = useState<Partial<Record<keyof CustomerData, string>>>({});
   const [step, setStep] = useState<'cart' | 'form'>('cart');
 
+  const selectedZone = deliveryZones.find((z) => z.id === customer.deliveryZoneId) ?? null;
+  const deliveryFee = selectedZone?.price ?? 0;
+  const grandTotal = cartTotal + deliveryFee;
+
   function validate(): boolean {
-    const e: Partial<CustomerData> = {};
+    const e: Partial<Record<keyof CustomerData, string>> = {};
     if (!customer.name.trim()) e.name = 'Requerido';
     if (!customer.address.trim()) e.address = 'Requerido';
-    if (!customer.phone.trim()) e.phone = 'Requerido';
+
+    if (deliveryZones.length > 0 && !customer.deliveryZoneId) e.deliveryZoneId = 'Seleccioná una zona';
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   function handleConfirm() {
     if (!validate()) return;
-    const url = buildWhatsAppUrl(customer, cart, cartTotal);
+    const url = buildWhatsAppUrl(customer, cart, cartTotal, selectedZone);
     window.open(url, '_blank');
     clearCart();
     setCustomer(initialCustomer);
@@ -166,7 +174,7 @@ export default function CheckoutModal() {
                           </div>
 
                           <div className="mt-4 flex items-center justify-between rounded-xl bg-bg-elevated px-4 py-3">
-                            <span className="text-sm text-text-secondary">Total</span>
+                            <span className="text-sm text-text-secondary">Subtotal</span>
                             <span className="font-display text-lg font-700 text-text-primary" style={{ fontWeight: 700 }}>
                               ${cartTotal.toLocaleString('es-AR')}
                             </span>
@@ -205,46 +213,75 @@ export default function CheckoutModal() {
                           placeholder="Ej: María González"
                         />
                         <Field
-                          label="Dirección de entrega"
+                          label="Dirección / Entre qué calles"
                           value={customer.address}
                           error={errors.address}
                           onChange={(v) => setCustomer((c) => ({ ...c, address: v }))}
-                          placeholder="Calle, número, piso, etc."
-                        />
-                        <Field
-                          label="Teléfono"
-                          value={customer.phone}
-                          error={errors.phone}
-                          onChange={(v) => setCustomer((c) => ({ ...c, phone: v }))}
-                          placeholder="+54 11 XXXX-XXXX"
-                          type="tel"
+                          placeholder="Calle y número / Entre calles"
                         />
 
+                        <Field
+                          label="Piso / Depto (opcional)"
+                          value={customer.piso}
+                          onChange={(v) => setCustomer((c) => ({ ...c, piso: v }))}
+                          placeholder="Ej: 3° B"
+                        />
+
+                        {/* Payment method */}
                         <div>
                           <label className="mb-1.5 block text-xs font-600 text-text-secondary" style={{ fontWeight: 600 }}>
                             Método de pago
                           </label>
-                          <div className="grid grid-cols-3 gap-2">
-                            {(['efectivo', 'transferencia', 'tarjeta'] as const).map((method) => (
+                          <div className="grid grid-cols-2 gap-2">
+                            {(['efectivo', 'mercadopago'] as const).map((method) => (
                               <button
                                 key={method}
                                 onClick={() => setCustomer((c) => ({ ...c, payment: method }))}
-                                className={`rounded-xl px-3 py-2.5 text-xs font-600 capitalize transition-all duration-200 ${
+                                className={`rounded-xl px-3 py-2.5 text-xs font-600 transition-all duration-200 ${
                                   customer.payment === method
                                     ? 'bg-accent text-white shadow-glow-accent'
                                     : 'bg-bg-elevated text-text-secondary ring-1 ring-border hover:ring-border-strong'
                                 }`}
                                 style={{ fontWeight: 600 }}
                               >
-                                {method === 'efectivo' ? '💵 Efectivo' : method === 'transferencia' ? '🏦 Transf.' : '💳 Tarjeta'}
+                                {method === 'efectivo' ? '💵 Efectivo' : '📲 Mercado Pago'}
                               </button>
                             ))}
                           </div>
                         </div>
 
+                        {/* Delivery zone */}
+                        {deliveryZones.length > 0 && (
+                          <div>
+                            <label className="mb-1.5 flex items-center gap-1.5 text-xs font-600 text-text-secondary" style={{ fontWeight: 600 }}>
+                              <MapPin size={11} strokeWidth={1.5} />
+                              Lo enviamos a
+                            </label>
+                            <select
+                              value={customer.deliveryZoneId}
+                              onChange={(e) => setCustomer((c) => ({ ...c, deliveryZoneId: e.target.value }))}
+                              style={{ colorScheme: 'dark' }}
+                              className={`w-full rounded-xl bg-bg-elevated px-4 py-3 text-sm text-text-primary ring-1 transition-all focus:outline-none focus:ring-accent/50 ${
+                                errors.deliveryZoneId ? 'ring-red-500/60' : 'ring-border'
+                              }`}
+                            >
+                              <option value="">— Seleccioná tu zona —</option>
+                              {deliveryZones.map((zone) => (
+                                <option key={zone.id} value={zone.id}>
+                                  {zone.name} — ${zone.price.toLocaleString('es-AR')}
+                                </option>
+                              ))}
+                            </select>
+                            {errors.deliveryZoneId && (
+                              <p className="mt-1 text-xs text-red-400">{errors.deliveryZoneId}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Notes */}
                         <div>
                           <label className="mb-1.5 block text-xs font-600 text-text-secondary" style={{ fontWeight: 600 }}>
-                            Notas adicionales (opcional)
+                            Aclaraciones del pedido (opcional)
                           </label>
                           <textarea
                             value={customer.notes}
@@ -256,11 +293,28 @@ export default function CheckoutModal() {
                         </div>
                       </div>
 
-                      <div className="mt-4 mb-2 flex items-center justify-between rounded-xl bg-bg-elevated px-4 py-3">
-                        <span className="text-sm text-text-secondary">Total del pedido</span>
-                        <span className="font-display text-lg font-700 text-text-primary" style={{ fontWeight: 700 }}>
-                          ${cartTotal.toLocaleString('es-AR')}
-                        </span>
+                      {/* Order summary */}
+                      <div className="mt-4 mb-2 rounded-xl bg-bg-elevated px-4 py-3 flex flex-col gap-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-text-secondary">Subtotal</span>
+                          <span className="text-sm font-600 text-text-primary" style={{ fontWeight: 600 }}>
+                            ${cartTotal.toLocaleString('es-AR')}
+                          </span>
+                        </div>
+                        {selectedZone && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-text-secondary">Envío ({selectedZone.name})</span>
+                            <span className="text-sm font-600 text-text-primary" style={{ fontWeight: 600 }}>
+                              ${deliveryFee.toLocaleString('es-AR')}
+                            </span>
+                          </div>
+                        )}
+                        <div className="mt-1 flex items-center justify-between border-t border-border-subtle pt-2">
+                          <span className="text-sm font-700 text-text-primary" style={{ fontWeight: 700 }}>Total</span>
+                          <span className="font-display text-lg font-700 text-text-primary" style={{ fontWeight: 700 }}>
+                            ${grandTotal.toLocaleString('es-AR')}
+                          </span>
+                        </div>
                       </div>
 
                       <motion.button

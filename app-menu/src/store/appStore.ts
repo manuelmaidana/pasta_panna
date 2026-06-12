@@ -1,6 +1,12 @@
 import { create } from 'zustand';
-import type { MenuItem } from '../data/menuData';
-import { loadMenuFromStorage, saveMenuToStorage } from '../data/menuData';
+import type { MenuItem, MenuCategory, DishOfDay, DeliveryZone, SiteContent } from '../data/menuData';
+import {
+  loadMenuFromStorage, saveMenuToStorage,
+  loadCategoriesFromStorage, saveCategoriesToStorage,
+  loadDishOfDayFromStorage, saveDishOfDayToStorage,
+  loadDeliveryZonesFromStorage, saveDeliveryZonesToStorage,
+  loadSiteContentFromStorage, saveSiteContentToStorage,
+} from '../data/menuData';
 
 export interface CartItem {
   menuItem: MenuItem;
@@ -9,10 +15,28 @@ export interface CartItem {
 
 interface AppState {
   menu: MenuItem[];
+  categories: MenuCategory[];
+  dishOfDay: DishOfDay;
+  deliveryZones: DeliveryZone[];
+  siteContent: SiteContent;
   cart: CartItem[];
   isCheckoutOpen: boolean;
 
+  addMenuItem: (item: MenuItem) => void;
   updateMenuItem: (id: string, patch: Partial<MenuItem>) => void;
+  removeMenuItem: (id: string) => void;
+
+  addCategory: (label: string, emoji: string) => void;
+  updateCategory: (id: string, patch: Partial<MenuCategory>) => void;
+  removeCategory: (id: string) => void;
+
+  setDishOfDay: (dod: DishOfDay) => void;
+
+  addDeliveryZone: (name: string, price: number) => void;
+  updateDeliveryZone: (id: string, patch: Partial<Omit<DeliveryZone, 'id'>>) => void;
+  removeDeliveryZone: (id: string) => void;
+
+  setSiteContent: (content: SiteContent) => void;
 
   addToCart: (item: MenuItem) => void;
   removeFromCart: (id: string) => void;
@@ -28,8 +52,18 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   menu: loadMenuFromStorage(),
+  categories: loadCategoriesFromStorage(),
+  dishOfDay: loadDishOfDayFromStorage(),
+  deliveryZones: loadDeliveryZonesFromStorage(),
+  siteContent: loadSiteContentFromStorage(),
   cart: [],
   isCheckoutOpen: false,
+
+  addMenuItem: (item) => {
+    const next = [...get().menu, item];
+    saveMenuToStorage(next);
+    set({ menu: next });
+  },
 
   updateMenuItem: (id, patch) => {
     const next = get().menu.map((item) =>
@@ -37,6 +71,70 @@ export const useAppStore = create<AppState>((set, get) => ({
     );
     saveMenuToStorage(next);
     set({ menu: next });
+  },
+
+  removeMenuItem: (id) => {
+    const next = get().menu.filter((m) => m.id !== id);
+    saveMenuToStorage(next);
+    const dod = get().dishOfDay;
+    if (dod.itemId === id) {
+      const newDod = { enabled: false, itemId: null };
+      saveDishOfDayToStorage(newDod);
+      set({ menu: next, dishOfDay: newDod });
+    } else {
+      set({ menu: next });
+    }
+  },
+
+  addCategory: (label, emoji) => {
+    const id = `cat_${Date.now()}`;
+    const next = [...get().categories, { id, label, emoji }];
+    saveCategoriesToStorage(next);
+    set({ categories: next });
+  },
+
+  updateCategory: (id, patch) => {
+    const next = get().categories.map((c) =>
+      c.id === id ? { ...c, ...patch } : c
+    );
+    saveCategoriesToStorage(next);
+    set({ categories: next });
+  },
+
+  removeCategory: (id) => {
+    const nextMenu = get().menu.filter((m) => m.category !== id);
+    const nextCats = get().categories.filter((c) => c.id !== id);
+    saveMenuToStorage(nextMenu);
+    saveCategoriesToStorage(nextCats);
+    set({ menu: nextMenu, categories: nextCats });
+  },
+
+  setDishOfDay: (dod) => {
+    saveDishOfDayToStorage(dod);
+    set({ dishOfDay: dod });
+  },
+
+  addDeliveryZone: (name, price) => {
+    const next = [...get().deliveryZones, { id: `zone_${Date.now()}`, name, price }];
+    saveDeliveryZonesToStorage(next);
+    set({ deliveryZones: next });
+  },
+
+  updateDeliveryZone: (id, patch) => {
+    const next = get().deliveryZones.map((z) => (z.id === id ? { ...z, ...patch } : z));
+    saveDeliveryZonesToStorage(next);
+    set({ deliveryZones: next });
+  },
+
+  removeDeliveryZone: (id) => {
+    const next = get().deliveryZones.filter((z) => z.id !== id);
+    saveDeliveryZonesToStorage(next);
+    set({ deliveryZones: next });
+  },
+
+  setSiteContent: (content) => {
+    saveSiteContentToStorage(content);
+    set({ siteContent: content });
   },
 
   addToCart: (menuItem) => {

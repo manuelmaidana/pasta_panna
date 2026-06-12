@@ -24,8 +24,7 @@ export default function MenuItem({ item }: Props) {
   }
 
   return (
-    <motion.div
-      layout
+    <div
       className="overflow-hidden rounded-2xl bg-bg-surface ring-1 ring-border transition-shadow duration-300 ease-smooth hover:shadow-card-hover"
       style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3)' }}
     >
@@ -66,7 +65,7 @@ export default function MenuItem({ item }: Props) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+            transition={{ duration: 0.28, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
             <div className="px-4 pb-4">
@@ -144,6 +143,6 @@ export default function MenuItem({ item }: Props) {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 }

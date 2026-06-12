@@ -4,16 +4,27 @@ export interface MenuItem {
   description: string;
   price: number;
   image: string;
-  category: 'principal' | 'acompanamiento';
+  category: string;
 }
 
 export interface MenuCategory {
-  id: 'principal' | 'acompanamiento';
+  id: string;
   label: string;
   emoji: string;
 }
 
-export const CATEGORIES: MenuCategory[] = [
+export interface DishOfDay {
+  enabled: boolean;
+  itemId: string | null;
+}
+
+export interface DeliveryZone {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export const DEFAULT_CATEGORIES: MenuCategory[] = [
   { id: 'principal', label: 'Plato Principal', emoji: '🍝' },
   { id: 'acompanamiento', label: 'Acompañamiento', emoji: '🥗' },
 ];
@@ -61,18 +72,82 @@ export const DEFAULT_MENU: MenuItem[] = [
   },
 ];
 
-const STORAGE_KEY = 'pasta_panna_menu';
+export const DEFAULT_DISH_OF_DAY: DishOfDay = { enabled: false, itemId: null };
+
+export const DEFAULT_DELIVERY_ZONES: DeliveryZone[] = [];
+
+export interface SiteContent {
+  heroTitle: string;
+  heroSubtitle: string;
+}
+
+export const DEFAULT_SITE_CONTENT: SiteContent = {
+  heroTitle: 'Pasta Panna',
+  heroSubtitle: 'Cocina italiana artesanal. Seleccioná tus platos y envianos el pedido por WhatsApp.',
+};
+
+const MENU_KEY = 'pasta_panna_menu';
+const CATEGORIES_KEY = 'pasta_panna_categories';
+const DOD_KEY = 'pasta_panna_dod';
+const ZONES_KEY = 'pasta_panna_delivery_zones';
+const SITE_CONTENT_KEY = 'pasta_panna_site_content';
 
 export function loadMenuFromStorage(): MenuItem[] {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(MENU_KEY);
     if (stored) return JSON.parse(stored) as MenuItem[];
-  } catch {
-    // ignore corrupt storage
-  }
+  } catch { /* ignore */ }
   return DEFAULT_MENU;
 }
 
 export function saveMenuToStorage(items: MenuItem[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  localStorage.setItem(MENU_KEY, JSON.stringify(items));
+}
+
+export function loadCategoriesFromStorage(): MenuCategory[] {
+  try {
+    const stored = localStorage.getItem(CATEGORIES_KEY);
+    if (stored) return JSON.parse(stored) as MenuCategory[];
+  } catch { /* ignore */ }
+  return DEFAULT_CATEGORIES;
+}
+
+export function saveCategoriesToStorage(cats: MenuCategory[]): void {
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
+}
+
+export function loadDishOfDayFromStorage(): DishOfDay {
+  try {
+    const stored = localStorage.getItem(DOD_KEY);
+    if (stored) return JSON.parse(stored) as DishOfDay;
+  } catch { /* ignore */ }
+  return DEFAULT_DISH_OF_DAY;
+}
+
+export function saveDishOfDayToStorage(dod: DishOfDay): void {
+  localStorage.setItem(DOD_KEY, JSON.stringify(dod));
+}
+
+export function loadDeliveryZonesFromStorage(): DeliveryZone[] {
+  try {
+    const stored = localStorage.getItem(ZONES_KEY);
+    if (stored) return JSON.parse(stored) as DeliveryZone[];
+  } catch { /* ignore */ }
+  return DEFAULT_DELIVERY_ZONES;
+}
+
+export function saveDeliveryZonesToStorage(zones: DeliveryZone[]): void {
+  localStorage.setItem(ZONES_KEY, JSON.stringify(zones));
+}
+
+export function loadSiteContentFromStorage(): SiteContent {
+  try {
+    const stored = localStorage.getItem(SITE_CONTENT_KEY);
+    if (stored) return { ...DEFAULT_SITE_CONTENT, ...JSON.parse(stored) };
+  } catch { /* ignore */ }
+  return DEFAULT_SITE_CONTENT;
+}
+
+export function saveSiteContentToStorage(content: SiteContent): void {
+  localStorage.setItem(SITE_CONTENT_KEY, JSON.stringify(content));
 }

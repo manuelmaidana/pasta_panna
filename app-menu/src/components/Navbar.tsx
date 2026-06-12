@@ -8,12 +8,12 @@ export default function Navbar() {
   const openCheckout = useAppStore((s) => s.openCheckout);
 
   return (
-    <header className="sticky top-0 z-40 w-full">
+    <header className="sticky top-0 z-40 w-full bg-bg-base/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-lg items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <span className="text-xl">🍝</span>
           <span className="font-display text-base font-700 tracking-tight text-text-primary">
-            Pasta &amp; Panna
+            Pasta Panna
           </span>
         </div>
 
@@ -43,7 +43,7 @@ export default function Navbar() {
         </motion.button>
       </div>
 
-      <div className="h-px bg-border-subtle" />
+      <div className="h-px bg-border" />
     </header>
   );
 }

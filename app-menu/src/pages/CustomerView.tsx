@@ -1,17 +1,21 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Settings } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import MenuCategory from '../components/MenuCategory';
+import DishOfDay from '../components/DishOfDay';
 import CheckoutModal from '../components/CheckoutModal';
-import { CATEGORIES } from '../data/menuData';
 import { useAppStore } from '../store/appStore';
 
 export default function CustomerView() {
   const cart = useAppStore((s) => s.cart);
-  const cartCount = cart.reduce((sum, c) => sum + c.quantity, 0);
-  const cartTotal = cart.reduce((sum, c) => sum + c.menuItem.price * c.quantity, 0);
+  const categories = useAppStore((s) => s.categories);
+  const siteContent = useAppStore((s) => s.siteContent);
   const openCheckout = useAppStore((s) => s.openCheckout);
+
+  const cartCount = useMemo(() => cart.reduce((sum, c) => sum + c.quantity, 0), [cart]);
+  const cartTotal = useMemo(() => cart.reduce((sum, c) => sum + c.menuItem.price * c.quantity, 0), [cart]);
 
   return (
     <div className="relative min-h-[100dvh] bg-bg-base">
@@ -29,20 +33,20 @@ export default function CustomerView() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="px-4 py-8"
         >
-          <p className="text-xs font-600 uppercase tracking-[0.15em] text-accent mb-2" style={{ fontWeight: 600 }}>
-            Menú del día
-          </p>
           <h1 className="font-display text-3xl font-800 text-text-primary leading-tight" style={{ fontWeight: 800 }}>
             Bienvenido a<br />
-            <span className="text-accent">Pasta &amp; Panna</span>
+            <span className="text-accent">{siteContent.heroTitle}</span>
           </h1>
           <p className="mt-2 text-sm text-text-secondary leading-relaxed max-w-xs">
-            Cocina italiana artesanal. Seleccioná tus platos y envianos el pedido por WhatsApp.
+            {siteContent.heroSubtitle}
           </p>
         </motion.div>
 
+        {/* Dish of the day sits above all categories */}
+        <DishOfDay />
+
         <div className="flex flex-col gap-8">
-          {CATEGORIES.map((category, i) => (
+          {categories.map((category, i) => (
             <motion.div
               key={category.id}
               initial={{ opacity: 0, y: 24 }}
