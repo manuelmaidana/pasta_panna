@@ -1,5 +1,4 @@
 import { initializeApp } from 'firebase/app';
-import { getAnalytics } from 'firebase/analytics';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
@@ -9,9 +8,7 @@ const firebaseConfig = {
   storageBucket: 'pastapanna-36a1d.firebasestorage.app',
   messagingSenderId: '198666832551',
   appId: '1:198666832551:web:dc779deea85c5aceef2982',
-  measurementId: 'G-FFVBZ5DSRE',
 };
 
-export const app = initializeApp(firebaseConfig);
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
