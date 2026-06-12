@@ -288,9 +288,9 @@ function AdminPanelInner({ onLogout }: { onLogout: () => void }) {
         </div>
 
         {/* Storage notice */}
-        <div className="mb-5 rounded-xl bg-amber-500/10 px-4 py-3 ring-1 ring-amber-500/20">
-          <p className="text-xs text-amber-400/90">
-            Los cambios se guardan en el navegador y se reflejan en el menú del cliente.
+        <div className="mb-5 rounded-xl bg-emerald-500/10 px-4 py-3 ring-1 ring-emerald-500/20">
+          <p className="text-xs text-emerald-400/90">
+            ☁️ Los cambios se guardan en la nube y se reflejan en todos los dispositivos en tiempo real.
           </p>
         </div>
 
